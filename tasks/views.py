@@ -6,36 +6,34 @@ from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status as http_status
-from accounts.authentication import RepresentativeAuthentication
 from .models import ServiceRequest, TaskStatus, TaskDismissal
+from .permissions import IsCustomer, IsRepresentative
 from .serializers import ServiceRequestCreateSerializer  # or a dedicated RepTaskSerializer
 
 class ServiceRequestCreateView(CreateAPIView):
     serializer_class = ServiceRequestCreateSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsCustomer]
 
     def perform_create(self, serializer):
-        serializer.save(requested_by=self.request.user)
+        serializer.save(requested_by=self.request.user.customer)
 
 
 class RepAssignedTasksView(ListAPIView):
-    authentication_classes = [RepresentativeAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsRepresentative]
     serializer_class = ServiceRequestCreateSerializer
 
     def get_queryset(self):
         return ServiceRequest.objects.filter(
-            assigned_representative=self.request.user,
-            status__in=[TaskStatus.PENDING, TaskStatus.CONFIRMED],
+            assigned_representative=self.request.user.representative,
+            status__in=[TaskStatus.PENDING, TaskStatus.CONFIRMED,],
         ).order_by("-created_at")
 
 
 class RepConfirmTaskView(APIView):
-    authentication_classes = [RepresentativeAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsRepresentative]
 
     def post(self, request, pk):
-        task = ServiceRequest.objects.filter(pk=pk, assigned_representative=request.user).first()
+        task = ServiceRequest.objects.filter(pk=pk, assigned_representative=request.user.representative).first()
         if task is None:
             return Response({"detail": "Task not found"}, status=http_status.HTTP_404_NOT_FOUND)
         if task.status != TaskStatus.PENDING:
@@ -46,11 +44,10 @@ class RepConfirmTaskView(APIView):
 
 
 class RepUndoConfirmTaskView(APIView):
-    authentication_classes = [RepresentativeAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsRepresentative]
 
     def post(self, request, pk):
-        task = ServiceRequest.objects.filter(pk=pk, assigned_representative=request.user).first()
+        task = ServiceRequest.objects.filter(pk=pk, assigned_representative=request.user.representative).first()
         if task is None:
             return Response({"detail": "Task not found"}, status=http_status.HTTP_404_NOT_FOUND)
         if task.status != TaskStatus.CONFIRMED:
@@ -61,11 +58,10 @@ class RepUndoConfirmTaskView(APIView):
 
 
 class RepDismissTaskView(APIView):
-    authentication_classes = [RepresentativeAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsRepresentative]
 
     def post(self, request, pk):
-        task = ServiceRequest.objects.filter(pk=pk, assigned_representative=request.user).first()
+        task = ServiceRequest.objects.filter(pk=pk, assigned_representative=request.user.representative).first()
         if task is None:
             return Response({"detail": "Task not found"}, status=http_status.HTTP_404_NOT_FOUND)
         if task.status not in [TaskStatus.PENDING, TaskStatus.CONFIRMED]:
@@ -77,7 +73,7 @@ class RepDismissTaskView(APIView):
             return Response({"detail": "reason is required"}, status=http_status.HTTP_400_BAD_REQUEST)
 
         TaskDismissal.objects.create(
-            service_request=task, representative=request.user, reason=reason, note=note
+            service_request=task, representative=request.user.representative, reason=reason, note=note,
         )
         task.dismiss_reason = reason
         task.dismiss_note = note

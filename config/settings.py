@@ -20,7 +20,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env()
 environ.Env.read_env(BASE_DIR / '.env')
 
-FIREBASE_CREDENTIALS_PATH = BASE_DIR / "firebase-service-account.json"
+GOOGLE_OAUTH_CLIENT_ID = env(
+    "GOOGLE_OAUTH_CLIENT_ID",
+    default="926304950521-i8ce23p8ue5guq9aueuodo6lk4ho8v5b.apps.googleusercontent.com",
+)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
@@ -142,9 +145,12 @@ MAILERS = {
 }
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": (
+    "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
-    ),
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
 }
 
 SIMPLE_JWT = {
