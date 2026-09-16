@@ -6,9 +6,14 @@ from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status as http_status
-from .models import ServiceRequest, TaskStatus, TaskDismissal
+from .models import Service, ServiceRequest, TaskStatus, TaskDismissal
 from .permissions import IsCustomer, IsRepresentative
-from .serializers import ServiceRequestCreateSerializer  # or a dedicated RepTaskSerializer
+from .serializers import ServiceRequestCreateSerializer, ServiceSerializer  # or a dedicated RepTaskSerializer
+
+class ServiceListView(ListAPIView):
+    serializer_class = ServiceSerializer
+    queryset = Service.objects.filter(is_active=True)
+
 
 class ServiceRequestCreateView(CreateAPIView):
     serializer_class = ServiceRequestCreateSerializer

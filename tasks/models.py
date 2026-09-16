@@ -21,6 +21,19 @@ class DismissReason(models.TextChoices):
     DUPLICATE = "duplicate", "Duplicate"
     OTHER = "other", "Other"
 
+class Service(models.Model):
+    title = models.CharField(max_length=150, unique=True)
+    color_hex = models.CharField(max_length=9, default="#2352CC")
+    order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["order"]
+
+    def __str__(self):
+        return self.title
+
 class ServiceRequest(models.Model):
     requested_by = models.ForeignKey(
         Customer, on_delete=models.CASCADE, related_name="requests"

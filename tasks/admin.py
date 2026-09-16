@@ -1,5 +1,13 @@
 from django.contrib import admin
-from .models import ServiceRequest, TaskDismissal
+from .models import Service, ServiceRequest, TaskDismissal
+
+
+@admin.register(Service)
+class ServiceAdmin(admin.ModelAdmin):
+    list_display = ("id", "title", "color_hex", "order", "is_active")
+    list_editable = ("order", "is_active")
+    search_fields = ("title",)
+    ordering = ("order",)
 
 
 class TaskDismissalInline(admin.TabularInline):
