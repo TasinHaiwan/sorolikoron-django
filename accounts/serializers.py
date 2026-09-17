@@ -1,7 +1,8 @@
+from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
-from .models import Customer
+from .models import Customer, RepresentativeApplication, RepresentativeApplicationStatus
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -23,3 +24,26 @@ class RegisterSerializer(serializers.Serializer):
         )
         Customer.objects.create(user=user, name=validated_data["name"])
         return user
+
+
+class RepresentativeApplicationSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=150)
+    email = serializers.EmailField()
+    password = serializers.CharField(min_length=6, write_only=True)
+
+    def validate_email(self, value):
+        value = value.strip().lower()
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError("An account already exists for this email.")
+        if RepresentativeApplication.objects.filter(
+            email__iexact=value, status=RepresentativeApplicationStatus.PENDING
+        ).exists():
+            raise serializers.ValidationError("A request for this email is already pending review.")
+        return value
+
+    def create(self, validated_data):
+        return RepresentativeApplication.objects.create(
+            name=validated_data["name"],
+            email=validated_data["email"],
+            password_hash=make_password(validated_data["password"]),
+        )

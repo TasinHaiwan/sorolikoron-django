@@ -8,7 +8,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from .google_auth import verify_google_id_token
 from .models import Customer
-from .serializers import RegisterSerializer
+from .serializers import RegisterSerializer, RepresentativeApplicationSerializer
 
 
 def _tokens_for(user):
@@ -68,10 +68,25 @@ class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        customer = getattr(request.user, "customer", None)
+        profile = getattr(request.user, "customer", None) or getattr(request.user, "representative", None)
         return Response({
             "id": request.user.id,
             "email": request.user.email,
-            "name": customer.name if customer else "",
-            "phone": customer.phone if customer else "",
+            "name": profile.name if profile else "",
+            "phone": profile.phone if profile else "",
+            "role": "representative" if hasattr(request.user, "representative") else "customer",
         })
+
+
+class RepresentativeApplicationCreateView(CreateAPIView):
+    serializer_class = RepresentativeApplicationSerializer
+    permission_classes = [AllowAny]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        application = serializer.save()
+        return Response(
+            {"id": application.id, "status": application.status},
+            status=status.HTTP_201_CREATED,
+        )
