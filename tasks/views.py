@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status as http_status
 from .models import Service, ServiceRequest, TaskStatus, TaskDismissal
 from .permissions import IsCustomer, IsRepresentative
-from .serializers import ServiceRequestCreateSerializer, ServiceSerializer  # or a dedicated RepTaskSerializer
+from .serializers import RepTaskSerializer, ServiceRequestCreateSerializer, ServiceSerializer
 
 class ServiceListView(ListAPIView):
     serializer_class = ServiceSerializer
@@ -25,7 +25,7 @@ class ServiceRequestCreateView(CreateAPIView):
 
 class RepAssignedTasksView(ListAPIView):
     permission_classes = [IsAuthenticated, IsRepresentative]
-    serializer_class = ServiceRequestCreateSerializer
+    serializer_class = RepTaskSerializer
 
     def get_queryset(self):
         return ServiceRequest.objects.filter(
