@@ -75,6 +75,7 @@ class MeView(APIView):
             "name": profile.name if profile else "",
             "phone": profile.phone if profile else "",
             "role": "representative" if hasattr(request.user, "representative") else "customer",
+            "is_available": getattr(profile, "is_available", None),
         })
 
 

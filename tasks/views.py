@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.utils import timezone
 from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
@@ -32,6 +33,24 @@ class RepAssignedTasksView(ListAPIView):
             assigned_representative=self.request.user.representative,
             status__in=[TaskStatus.PENDING, TaskStatus.CONFIRMED,],
         ).order_by("-created_at")
+
+
+class RepAvailabilityView(APIView):
+    permission_classes = [IsAuthenticated, IsRepresentative]
+
+    def post(self, request):
+        is_available = request.data.get("is_available")
+        if not isinstance(is_available, bool):
+            return Response(
+                {"is_available": ["This field is required and must be true or false."]},
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
+
+        rep = request.user.representative
+        rep.is_available = is_available
+        rep.availability_updated_at = timezone.now()
+        rep.save(update_fields=["is_available", "availability_updated_at"])
+        return Response({"is_available": rep.is_available})
 
 
 class RepConfirmTaskView(APIView):
