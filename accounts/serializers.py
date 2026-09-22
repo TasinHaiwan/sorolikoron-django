@@ -2,7 +2,16 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
-from .models import Customer, RepresentativeApplication, RepresentativeApplicationStatus
+from .models import (
+    Customer, RepresentativeApplication, RepresentativeApplicationStatus, RepresentativeSkill,
+)
+
+
+class RepresentativeSkillSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RepresentativeSkill
+        fields = ["id", "name", "level", "note"]
+        read_only_fields = fields
 
 
 class RegisterSerializer(serializers.Serializer):

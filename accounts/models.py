@@ -26,10 +26,36 @@ class Representative(models.Model):
     phone = models.CharField(max_length=20, blank=True)
     is_available = models.BooleanField(default=False)
     availability_updated_at = models.DateTimeField(null=True, blank=True)
+    coverage_area = models.CharField(
+        max_length=255, blank=True,
+        help_text="The area/routes this representative serves, e.g. 'Dhaka campus routes'.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"#{self.id} — {self.name}"
+
+
+class SkillLevel(models.TextChoices):
+    BEGINNER = "beginner", "Beginner"
+    INTERMEDIATE = "intermediate", "Intermediate"
+    ADVANCED = "advanced", "Advanced"
+
+
+class RepresentativeSkill(models.Model):
+    """A skill assigned to a representative by an admin — shown read-only
+    on the rep's own profile."""
+    representative = models.ForeignKey(Representative, on_delete=models.CASCADE, related_name="skills")
+    name = models.CharField(max_length=100)
+    level = models.CharField(max_length=20, choices=SkillLevel.choices, default=SkillLevel.BEGINNER)
+    note = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return f"{self.representative.name} — {self.name} ({self.level})"
 
 
 class RepresentativeApplicationStatus(models.TextChoices):

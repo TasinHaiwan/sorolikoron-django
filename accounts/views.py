@@ -8,7 +8,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from .google_auth import verify_google_id_token
 from .models import Customer
-from .serializers import RegisterSerializer, RepresentativeApplicationSerializer
+from .serializers import (
+    RegisterSerializer, RepresentativeApplicationSerializer, RepresentativeSkillSerializer,
+)
 
 
 def _tokens_for(user):
@@ -69,6 +71,7 @@ class MeView(APIView):
 
     def get(self, request):
         profile = getattr(request.user, "customer", None) or getattr(request.user, "representative", None)
+        skills = RepresentativeSkillSerializer(profile.skills.all(), many=True).data if hasattr(profile, "skills") else []
         return Response({
             "id": request.user.id,
             "email": request.user.email,
@@ -76,6 +79,8 @@ class MeView(APIView):
             "phone": profile.phone if profile else "",
             "role": "representative" if hasattr(request.user, "representative") else "customer",
             "is_available": getattr(profile, "is_available", None),
+            "coverage_area": getattr(profile, "coverage_area", None),
+            "skills": skills,
         })
 
 

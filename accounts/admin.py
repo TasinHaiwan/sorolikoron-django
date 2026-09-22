@@ -2,19 +2,29 @@ from django.contrib import admin
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from .models import Customer, Representative, RepresentativeApplication, RepresentativeApplicationStatus
+from .models import (
+    Customer, Representative, RepresentativeApplication, RepresentativeApplicationStatus,
+    RepresentativeSkill,
+)
 
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "phone", "user", "created_at")
     search_fields = ("name", "phone", "user__email", "user__username")
 
+
+class RepresentativeSkillInline(admin.TabularInline):
+    model = RepresentativeSkill
+    extra = 1
+
+
 @admin.register(Representative)
 class RepresentativeAdmin(admin.ModelAdmin):
-    list_display = ("id", "name", "phone", "is_available")
-    list_editable = ("is_available",)
+    list_display = ("id", "name", "phone", "is_available", "coverage_area")
+    list_editable = ("is_available", "coverage_area")
     list_filter = ("is_available",)
     search_fields = ("name", "phone", "user__email", "user__username")
+    inlines = [RepresentativeSkillInline]
 
 
 @admin.register(RepresentativeApplication)
