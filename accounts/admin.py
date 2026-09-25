@@ -20,11 +20,18 @@ class RepresentativeSkillInline(admin.TabularInline):
 
 @admin.register(Representative)
 class RepresentativeAdmin(admin.ModelAdmin):
-    list_display = ("id", "name", "phone", "is_available", "coverage_area")
+    list_display = ("id", "name", "phone", "is_available", "coverage_area", "skills_list")
     list_editable = ("is_available", "coverage_area")
     list_filter = ("is_available",)
     search_fields = ("name", "phone", "user__email", "user__username")
     inlines = [RepresentativeSkillInline]
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related("skills")
+
+    @admin.display(description="Skills")
+    def skills_list(self, obj):
+        return ", ".join(skill.name for skill in obj.skills.all()) or "—"
 
 
 @admin.register(RepresentativeApplication)
