@@ -23,6 +23,10 @@ class DismissReason(models.TextChoices):
 
 class Service(models.Model):
     title = models.CharField(max_length=150, unique=True)
+    description = models.CharField(
+        max_length=200, blank=True,
+        help_text="Shown as a one-line subtitle under the title in the app. Keep it short.",
+    )
     color_hex = models.CharField(max_length=9, default="#2352CC")
     order = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)

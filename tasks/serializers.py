@@ -5,7 +5,7 @@ from .models import Service, ServiceRequest
 class ServiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Service
-        fields = ["id", "title", "color_hex", "order"]
+        fields = ["id", "title", "description", "color_hex", "order"]
 
 
 class ServiceRequestCreateSerializer(serializers.ModelSerializer):

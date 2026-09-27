@@ -1,12 +1,12 @@
 from django.urls import path
 from .views import (
-    ServiceListView, ServiceRequestCreateView, RepAssignedTasksView,
+    ServiceListView, ServiceRequestListCreateView, RepAssignedTasksView,
     RepAvailabilityView, RepConfirmTaskView, RepUndoConfirmTaskView, RepDismissTaskView,
 )
 
 urlpatterns = [
     path("services/", ServiceListView.as_view()),
-    path("service-requests/", ServiceRequestCreateView.as_view()),
+    path("service-requests/", ServiceRequestListCreateView.as_view()),
     path("rep/tasks/", RepAssignedTasksView.as_view()),
     path("rep/availability/", RepAvailabilityView.as_view()),
     path("rep/tasks/<int:pk>/confirm/", RepConfirmTaskView.as_view()),

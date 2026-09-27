@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.utils import timezone
-from rest_framework.generics import CreateAPIView
+from rest_framework.generics import ListCreateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView
@@ -16,9 +16,14 @@ class ServiceListView(ListAPIView):
     queryset = Service.objects.filter(is_active=True)
 
 
-class ServiceRequestCreateView(CreateAPIView):
+class ServiceRequestListCreateView(ListCreateAPIView):
     serializer_class = ServiceRequestCreateSerializer
     permission_classes = [IsAuthenticated, IsCustomer]
+
+    def get_queryset(self):
+        return ServiceRequest.objects.filter(
+            requested_by=self.request.user.customer
+        ).order_by("-created_at")
 
     def perform_create(self, serializer):
         serializer.save(requested_by=self.request.user.customer)

@@ -47,12 +47,14 @@ Virtualenv lives at `venv/` in the repo root — activate it before running any 
 | POST | `/api/auth/refresh/` | `TokenRefreshView` | `AllowAny` |
 | POST | `/api/auth/representative-applications/` | `RepresentativeApplicationCreateView` | `AllowAny` |
 | GET | `/api/services/` | `ServiceListView` | `IsAuthenticated` (any profile) |
-| POST | `/api/service-requests/` | `ServiceRequestCreateView` | `IsAuthenticated, IsCustomer` |
+| GET, POST | `/api/service-requests/` | `ServiceRequestListCreateView` | `IsAuthenticated, IsCustomer` |
 | GET | `/api/rep/tasks/` | `RepAssignedTasksView` | `IsAuthenticated, IsRepresentative` |
 | POST | `/api/rep/tasks/<id>/confirm/` | `RepConfirmTaskView` | `IsAuthenticated, IsRepresentative` |
 | POST | `/api/rep/tasks/<id>/undo-confirm/` | `RepUndoConfirmTaskView` | `IsAuthenticated, IsRepresentative` |
 | POST | `/api/rep/tasks/<id>/dismiss/` | `RepDismissTaskView` | `IsAuthenticated, IsRepresentative` |
 | POST | `/api/rep/availability/` | `RepAvailabilityView` | `IsAuthenticated, IsRepresentative` |
+
+`GET /api/service-requests/` returns only the authenticated customer's own requests (`requested_by=request.user.customer`, newest first) — there is no way for a customer to see anyone else's. `Service` also carries a short admin-editable `description` (blank by default) rendered as a one-line subtitle in the customer app; most of the 40+ seeded services don't have one set yet.
 
 **Task lifecycle:** a `ServiceRequest` starts `pending`. **Assignment to a representative happens only through the Django admin** (`ServiceRequestAdmin.list_editable = ("assigned_representative",)`) — there is no API for a rep to claim a task or for the app to assign one. A `pre_save` signal (`tasks/models.py`) resets status back to `PENDING` whenever admin reassigns an existing request to a *different* rep. A rep can then `confirm` (→ `CONFIRMED`, undoable via `undo-confirm`) or `dismiss` (→ `DISMISSED`, requires a `reason` from the `DismissReason` choices + optional free-text `note`, writes a `TaskDismissal` row, and clears `assigned_representative` so admin can reassign it).
 
