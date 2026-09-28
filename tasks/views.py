@@ -16,14 +16,36 @@ class ServiceListView(ListAPIView):
     queryset = Service.objects.filter(is_active=True)
 
 
+ONGOING_STATUSES = [TaskStatus.PENDING, TaskStatus.CONFIRMED, TaskStatus.IN_PROGRESS]
+
+
 class ServiceRequestListCreateView(ListCreateAPIView):
+    """
+    Supports optional filtering via query params, used by the customer
+    app's home screen (ongoing only) and Activity tab (date range):
+    - `ongoing=true` — only pending/confirmed/in_progress requests.
+    - `date_from`, `date_to` (YYYY-MM-DD, inclusive) — filtered against
+      `created_at` in the server's timezone (UTC).
+    With no params, behaves as before: the customer's full history.
+    """
     serializer_class = ServiceRequestCreateSerializer
     permission_classes = [IsAuthenticated, IsCustomer]
 
     def get_queryset(self):
-        return ServiceRequest.objects.filter(
-            requested_by=self.request.user.customer
-        ).order_by("-created_at")
+        queryset = ServiceRequest.objects.filter(requested_by=self.request.user.customer)
+
+        if self.request.query_params.get("ongoing") == "true":
+            queryset = queryset.filter(status__in=ONGOING_STATUSES)
+
+        date_from = self.request.query_params.get("date_from")
+        if date_from:
+            queryset = queryset.filter(created_at__date__gte=date_from)
+
+        date_to = self.request.query_params.get("date_to")
+        if date_to:
+            queryset = queryset.filter(created_at__date__lte=date_to)
+
+        return queryset.order_by("-created_at")
 
     def perform_create(self, serializer):
         serializer.save(requested_by=self.request.user.customer)
