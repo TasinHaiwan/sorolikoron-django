@@ -28,6 +28,15 @@ class Service(models.Model):
         help_text="Shown as a one-line subtitle under the title in the app. Keep it short.",
     )
     color_hex = models.CharField(max_length=9, default="#2352CC")
+    icon_slug = models.SlugField(
+        max_length=50, blank=True,
+        help_text=(
+            "Filename (without extension) of an SVG in tasks/static/service_icons/, "
+            "e.g. 'building-bank' for building-bank.svg. Pick one from "
+            "tabler.io/icons — see the README in that folder. Left blank, the app "
+            "falls back to a colored initial-letter avatar."
+        ),
+    )
     order = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
