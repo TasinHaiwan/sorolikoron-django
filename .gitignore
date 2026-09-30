@@ -3,3 +3,4 @@ firebase-service-account.json
 __pycache__/
 *.py[cod]
 *.sqlite3
+media/

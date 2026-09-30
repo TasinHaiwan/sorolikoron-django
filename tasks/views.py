@@ -7,13 +7,22 @@ from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status as http_status
-from .models import Service, ServiceRequest, TaskStatus, TaskDismissal
+from .models import HomeBanner, Service, ServiceRequest, TaskStatus, TaskDismissal
 from .permissions import IsCustomer, IsRepresentative
-from .serializers import RepTaskSerializer, ServiceRequestCreateSerializer, ServiceSerializer
+from .serializers import (
+    HomeBannerSerializer, RepTaskSerializer, ServiceRequestCreateSerializer, ServiceSerializer,
+)
 
 class ServiceListView(ListAPIView):
     serializer_class = ServiceSerializer
     queryset = Service.objects.filter(is_active=True)
+
+
+class HomeBannerListView(ListAPIView):
+    """All active banners, in admin-defined order — no page size cap,
+    the customer app's carousel renders every one it gets back."""
+    serializer_class = HomeBannerSerializer
+    queryset = HomeBanner.objects.filter(is_active=True)
 
 
 ONGOING_STATUSES = [TaskStatus.PENDING, TaskStatus.CONFIRMED, TaskStatus.IN_PROGRESS]

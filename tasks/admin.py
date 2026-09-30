@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Service, ServiceRequest, TaskDismissal
+from django.utils.html import format_html
+from .models import HomeBanner, Service, ServiceRequest, TaskDismissal
 
 
 @admin.register(Service)
@@ -8,6 +9,21 @@ class ServiceAdmin(admin.ModelAdmin):
     list_editable = ("order", "is_active")
     search_fields = ("title",)
     ordering = ("order",)
+
+
+@admin.register(HomeBanner)
+class HomeBannerAdmin(admin.ModelAdmin):
+    list_display = ("id", "thumbnail", "caption", "order", "is_active", "created_at")
+    list_editable = ("order", "is_active")
+    ordering = ("order", "id")
+
+    @admin.display(description="Preview")
+    def thumbnail(self, obj):
+        if not obj.image:
+            return "(no image)"
+        return format_html(
+            '<img src="{}" style="height: 48px; border-radius: 4px;" />', obj.image.url
+        )
 
 
 class TaskDismissalInline(admin.TabularInline):
