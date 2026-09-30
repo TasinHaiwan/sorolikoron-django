@@ -47,6 +47,28 @@ class Service(models.Model):
     def __str__(self):
         return self.title
 
+class HomeBanner(models.Model):
+    """
+    Promotional images shown in the carousel between "Services" and "My
+    requests" on the customer app's home screen. Admin-managed only —
+    there's no per-image limit; the app renders every active row, in
+    `order`.
+    """
+    image = models.ImageField(upload_to="home_banners/")
+    caption = models.CharField(
+        max_length=150, blank=True,
+        help_text="Optional one-line caption overlaid on the image. Leave blank for none.",
+    )
+    order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["order", "id"]
+
+    def __str__(self):
+        return self.caption or f"Banner #{self.pk}"
+
 class ServiceRequest(models.Model):
     requested_by = models.ForeignKey(
         Customer, on_delete=models.CASCADE, related_name="requests"

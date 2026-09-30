@@ -1,6 +1,6 @@
 from django.templatetags.static import static
 from rest_framework import serializers
-from .models import Service, ServiceRequest
+from .models import HomeBanner, Service, ServiceRequest
 
 
 class ServiceSerializer(serializers.ModelSerializer):
@@ -16,6 +16,20 @@ class ServiceSerializer(serializers.ModelSerializer):
         path = static(f"service_icons/{obj.icon_slug}.svg")
         request = self.context.get("request")
         return request.build_absolute_uri(path) if request else path
+
+
+class HomeBannerSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = HomeBanner
+        fields = ["id", "image_url", "caption", "order"]
+
+    def get_image_url(self, obj):
+        if not obj.image:
+            return None
+        request = self.context.get("request")
+        return request.build_absolute_uri(obj.image.url) if request else obj.image.url
 
 
 class ServiceRequestCreateSerializer(serializers.ModelSerializer):
