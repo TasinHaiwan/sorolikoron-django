@@ -13,6 +13,7 @@ class TaskStatus(models.TextChoices):
     PENDING = "pending", "Pending"
     CONFIRMED = "confirmed", "Confirmed"
     IN_PROGRESS = "in_progress", "In Progress"
+    COMPLETED = "completed", "Completed"
     DISMISSED = "dismissed", "Dismissed"
 
 class DismissReason(models.TextChoices):

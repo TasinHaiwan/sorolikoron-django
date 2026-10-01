@@ -1,7 +1,8 @@
 from django.urls import path
 from .views import (
     HomeBannerListView, ServiceListView, ServiceRequestListCreateView, RepAssignedTasksView,
-    RepAvailabilityView, RepConfirmTaskView, RepUndoConfirmTaskView, RepDismissTaskView,
+    RepAvailabilityView, RepConfirmTaskView, RepUndoConfirmTaskView, RepStartTaskView,
+    RepCompleteTaskView, RepDismissTaskView,
 )
 
 urlpatterns = [
@@ -12,5 +13,7 @@ urlpatterns = [
     path("rep/availability/", RepAvailabilityView.as_view()),
     path("rep/tasks/<int:pk>/confirm/", RepConfirmTaskView.as_view()),
     path("rep/tasks/<int:pk>/undo-confirm/", RepUndoConfirmTaskView.as_view()),
+    path("rep/tasks/<int:pk>/start/", RepStartTaskView.as_view()),
+    path("rep/tasks/<int:pk>/complete/", RepCompleteTaskView.as_view()),
     path("rep/tasks/<int:pk>/dismiss/", RepDismissTaskView.as_view()),
 ]

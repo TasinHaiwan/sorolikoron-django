@@ -67,7 +67,12 @@ class RepAssignedTasksView(ListAPIView):
     def get_queryset(self):
         return ServiceRequest.objects.filter(
             assigned_representative=self.request.user.representative,
-            status__in=[TaskStatus.PENDING, TaskStatus.CONFIRMED,],
+            status__in=[
+                TaskStatus.PENDING,
+                TaskStatus.CONFIRMED,
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.COMPLETED,
+            ],
         ).order_by("-created_at")
 
 
@@ -113,6 +118,34 @@ class RepUndoConfirmTaskView(APIView):
         if task.status != TaskStatus.CONFIRMED:
             return Response({"detail": "Only confirmed tasks can be undone"}, status=http_status.HTTP_400_BAD_REQUEST)
         task.status = TaskStatus.PENDING
+        task.save(update_fields=["status", "updated_at"])
+        return Response({"status": task.status})
+
+
+class RepStartTaskView(APIView):
+    permission_classes = [IsAuthenticated, IsRepresentative]
+
+    def post(self, request, pk):
+        task = ServiceRequest.objects.filter(pk=pk, assigned_representative=request.user.representative).first()
+        if task is None:
+            return Response({"detail": "Task not found"}, status=http_status.HTTP_404_NOT_FOUND)
+        if task.status != TaskStatus.CONFIRMED:
+            return Response({"detail": "Only confirmed tasks can be started"}, status=http_status.HTTP_400_BAD_REQUEST)
+        task.status = TaskStatus.IN_PROGRESS
+        task.save(update_fields=["status", "updated_at"])
+        return Response({"status": task.status})
+
+
+class RepCompleteTaskView(APIView):
+    permission_classes = [IsAuthenticated, IsRepresentative]
+
+    def post(self, request, pk):
+        task = ServiceRequest.objects.filter(pk=pk, assigned_representative=request.user.representative).first()
+        if task is None:
+            return Response({"detail": "Task not found"}, status=http_status.HTTP_404_NOT_FOUND)
+        if task.status != TaskStatus.IN_PROGRESS:
+            return Response({"detail": "Only in-progress tasks can be completed"}, status=http_status.HTTP_400_BAD_REQUEST)
+        task.status = TaskStatus.COMPLETED
         task.save(update_fields=["status", "updated_at"])
         return Response({"status": task.status})
 
