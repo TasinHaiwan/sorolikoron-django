@@ -95,6 +95,11 @@ class ServiceRequest(models.Model):
     dismiss_reason = models.CharField(max_length=30, choices=DismissReason.choices, blank=True)
     dismiss_note = models.TextField(blank=True)
 
+    confirmed_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When the representative confirmed this task — used to compute response time. Cleared if the confirmation is undone.",
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

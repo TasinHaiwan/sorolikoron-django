@@ -1,3 +1,4 @@
+from django.db.models import Count
 from django.shortcuts import render
 from django.utils import timezone
 from rest_framework.generics import ListCreateAPIView
@@ -104,7 +105,8 @@ class RepConfirmTaskView(APIView):
         if task.status != TaskStatus.PENDING:
             return Response({"detail": "Only pending tasks can be confirmed"}, status=http_status.HTTP_400_BAD_REQUEST)
         task.status = TaskStatus.CONFIRMED
-        task.save(update_fields=["status", "updated_at"])
+        task.confirmed_at = timezone.now()
+        task.save(update_fields=["status", "confirmed_at", "updated_at"])
         return Response({"status": task.status})
 
 
@@ -118,7 +120,8 @@ class RepUndoConfirmTaskView(APIView):
         if task.status != TaskStatus.CONFIRMED:
             return Response({"detail": "Only confirmed tasks can be undone"}, status=http_status.HTTP_400_BAD_REQUEST)
         task.status = TaskStatus.PENDING
-        task.save(update_fields=["status", "updated_at"])
+        task.confirmed_at = None
+        task.save(update_fields=["status", "confirmed_at", "updated_at"])
         return Response({"status": task.status})
 
 
@@ -174,3 +177,64 @@ class RepDismissTaskView(APIView):
         task.assigned_representative = None  # frees it up for reassignment
         task.save()
         return Response({"status": task.status})
+
+
+class RepReportView(APIView):
+    """
+    Task counts by status, completion rate, and average response time for
+    the authenticated representative, over an inclusive `date_from`/
+    `date_to` (YYYY-MM-DD) range — both required. Counts are scoped to
+    tasks *created* in that range.
+
+    Dismissing a task clears `assigned_representative` (see
+    `RepDismissTaskView`), so the dismissed count is read from
+    `TaskDismissal` instead, joined back to the request's `created_at` for
+    the same range semantics as the other statuses.
+    """
+    permission_classes = [IsAuthenticated, IsRepresentative]
+
+    def get(self, request):
+        date_from = request.query_params.get("date_from")
+        date_to = request.query_params.get("date_to")
+        if not date_from or not date_to:
+            return Response(
+                {"detail": "date_from and date_to are required."},
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
+
+        rep = request.user.representative
+        assigned_qs = ServiceRequest.objects.filter(
+            assigned_representative=rep,
+            created_at__date__gte=date_from,
+            created_at__date__lte=date_to,
+        )
+
+        counts = {status: 0 for status in TaskStatus.values}
+        for row in assigned_qs.values("status").annotate(count=Count("id")):
+            counts[row["status"]] = row["count"]
+
+        counts[TaskStatus.DISMISSED] = TaskDismissal.objects.filter(
+            representative=rep,
+            service_request__created_at__date__gte=date_from,
+            service_request__created_at__date__lte=date_to,
+        ).count()
+
+        completed_count = counts[TaskStatus.COMPLETED]
+        resolved_count = completed_count + counts[TaskStatus.DISMISSED]
+        completion_rate = completed_count / resolved_count if resolved_count else 0.0
+
+        response_times = [
+            (row["confirmed_at"] - row["created_at"]).total_seconds()
+            for row in assigned_qs.filter(confirmed_at__isnull=False).values(
+                "created_at", "confirmed_at"
+            )
+        ]
+        average_response_time_seconds = (
+            int(sum(response_times) / len(response_times)) if response_times else None
+        )
+
+        return Response({
+            "tasks": counts,
+            "completion_rate": round(completion_rate, 4),
+            "average_response_time_seconds": average_response_time_seconds,
+        })
