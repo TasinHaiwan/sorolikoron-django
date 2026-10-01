@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
+from django.utils import timezone
 
 class Customer(models.Model):
     user = models.OneToOneField(
@@ -83,3 +84,33 @@ class RepresentativeApplication(models.Model):
 
     def __str__(self):
         return f"{self.name} <{self.email}> — {self.status}"
+
+
+class PasswordResetCode(models.Model):
+    """A one-time 6-digit code emailed to a user to authorize a password
+    reset. Only the hash is stored; the plaintext code only ever exists
+    in the outgoing email. One row per request — a new request doesn't
+    reuse or extend an existing row, it supersedes it (see the view)."""
+
+    MAX_ATTEMPTS = 5
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="password_reset_codes")
+    code_hash = models.CharField(max_length=128)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    attempts = models.PositiveSmallIntegerField(default=0)
+    consumed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"reset code for {self.user.email} (created {self.created_at:%Y-%m-%d %H:%M})"
+
+    @property
+    def is_expired(self):
+        return timezone.now() >= self.expires_at
+
+    @property
+    def is_usable(self):
+        return self.consumed_at is None and not self.is_expired and self.attempts < self.MAX_ATTEMPTS

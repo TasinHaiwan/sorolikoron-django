@@ -56,3 +56,19 @@ class RepresentativeApplicationSerializer(serializers.Serializer):
             email=validated_data["email"],
             password_hash=make_password(validated_data["password"]),
         )
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        return value.strip().lower()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    code = serializers.RegexField(r"^\d{6}$", error_messages={"invalid": "Enter the 6-digit code."})
+    new_password = serializers.CharField(min_length=6, write_only=True)
+
+    def validate_email(self, value):
+        return value.strip().lower()

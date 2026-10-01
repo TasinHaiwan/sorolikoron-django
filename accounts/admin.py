@@ -3,8 +3,8 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 
 from .models import (
-    Customer, Representative, RepresentativeApplication, RepresentativeApplicationStatus,
-    RepresentativeSkill,
+    Customer, PasswordResetCode, Representative, RepresentativeApplication,
+    RepresentativeApplicationStatus, RepresentativeSkill,
 )
 
 @admin.register(Customer)
@@ -67,3 +67,19 @@ class RepresentativeApplicationAdmin(admin.ModelAdmin):
             status=RepresentativeApplicationStatus.REJECTED, decided_at=timezone.now()
         )
         self.message_user(request, f"Rejected {updated} application(s).")
+
+
+@admin.register(PasswordResetCode)
+class PasswordResetCodeAdmin(admin.ModelAdmin):
+    """Read-only — codes are only ever created/consumed by the API."""
+
+    list_display = ("id", "user", "created_at", "expires_at", "attempts", "consumed_at")
+    list_filter = ("consumed_at",)
+    search_fields = ("user__email", "user__username")
+    readonly_fields = [f.name for f in PasswordResetCode._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False

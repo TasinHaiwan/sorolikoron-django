@@ -143,12 +143,23 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
+#
+# SMTP settings come from .env. When EMAIL_HOST is unset (e.g. local dev,
+# where .env is empty), we fall back to the console backend, which just
+# prints outgoing mail to the runserver log instead of sending it.
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
+EMAIL_HOST = env("EMAIL_HOST", default="")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@shorolikoron.com")
+
+if EMAIL_HOST:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -157,6 +168,10 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    "DEFAULT_THROTTLE_RATES": {
+        "password_reset_request": "3/min",
+        "password_reset_confirm": "10/min",
+    },
 }
 
 SIMPLE_JWT = {
