@@ -25,6 +25,11 @@ GOOGLE_OAUTH_CLIENT_ID = env(
     default="926304950521-i8ce23p8ue5guq9aueuodo6lk4ho8v5b.apps.googleusercontent.com",
 )
 
+# Path to a Firebase service-account JSON key, used by notifications/services.py
+# to send FCM pushes. Left empty (e.g. local dev with no key on disk), sending
+# is a no-op rather than an error. See .gitignore — never commit this file.
+FIREBASE_CREDENTIALS_PATH = env("FIREBASE_CREDENTIALS_PATH", default="")
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
@@ -49,6 +54,7 @@ INSTALLED_APPS = [
     'core',
     'accounts',
     'tasks',
+    'notifications',
     "rest_framework",
     "rest_framework.authtoken",
 ]

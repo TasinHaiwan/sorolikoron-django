@@ -1,7 +1,7 @@
 from django.db.models import Count
 from django.shortcuts import render
 from django.utils import timezone
-from rest_framework.generics import ListCreateAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView
@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status as http_status
 from .models import HomeBanner, Service, ServiceRequest, TaskStatus, TaskDismissal
+from .notifications import notify_task_completed, notify_task_confirmed, notify_task_started
 from .permissions import IsCustomer, IsRepresentative
 from .serializers import (
     HomeBannerSerializer, RepTaskSerializer, ServiceRequestCreateSerializer, ServiceSerializer,
@@ -77,6 +78,21 @@ class RepAssignedTasksView(ListAPIView):
         ).order_by("-created_at")
 
 
+class RepTaskDetailView(RetrieveAPIView):
+    """
+    A single task, scoped to the authenticated rep — used by the rep
+    app to resolve a notification-tap deep link to a task. If the task
+    has since been dismissed (which clears `assigned_representative`),
+    this correctly 404s; the client should treat that as "no longer
+    assigned to you", not a generic error.
+    """
+    permission_classes = [IsAuthenticated, IsRepresentative]
+    serializer_class = RepTaskSerializer
+
+    def get_queryset(self):
+        return ServiceRequest.objects.filter(assigned_representative=self.request.user.representative)
+
+
 class RepAvailabilityView(APIView):
     permission_classes = [IsAuthenticated, IsRepresentative]
 
@@ -107,6 +123,7 @@ class RepConfirmTaskView(APIView):
         task.status = TaskStatus.CONFIRMED
         task.confirmed_at = timezone.now()
         task.save(update_fields=["status", "confirmed_at", "updated_at"])
+        notify_task_confirmed(task)
         return Response({"status": task.status})
 
 
@@ -136,6 +153,7 @@ class RepStartTaskView(APIView):
             return Response({"detail": "Only confirmed tasks can be started"}, status=http_status.HTTP_400_BAD_REQUEST)
         task.status = TaskStatus.IN_PROGRESS
         task.save(update_fields=["status", "updated_at"])
+        notify_task_started(task)
         return Response({"status": task.status})
 
 
@@ -150,6 +168,7 @@ class RepCompleteTaskView(APIView):
             return Response({"detail": "Only in-progress tasks can be completed"}, status=http_status.HTTP_400_BAD_REQUEST)
         task.status = TaskStatus.COMPLETED
         task.save(update_fields=["status", "updated_at"])
+        notify_task_completed(task)
         return Response({"status": task.status})
 
 

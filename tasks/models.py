@@ -1,6 +1,6 @@
 from django.db import models
 from accounts.models import Customer, Representative
-from django.db.models.signals import pre_save
+from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 
 class ServiceCategory(models.TextChoices):
@@ -118,6 +118,7 @@ class TaskDismissal(models.Model):
 
 @receiver(pre_save, sender=ServiceRequest)
 def reset_status_on_reassignment(sender, instance, **kwargs):
+    instance._notify_new_assignment = False
     if not instance.pk:
         return
     try:
@@ -128,3 +129,19 @@ def reset_status_on_reassignment(sender, instance, **kwargs):
     if (instance.assigned_representative_id != previous.assigned_representative_id
             and instance.assigned_representative_id is not None):
         instance.status = TaskStatus.PENDING
+        instance._notify_new_assignment = True
+
+
+@receiver(post_save, sender=ServiceRequest)
+def notify_on_new_assignment(sender, instance, created, **kwargs):
+    # Covers both a reassignment flagged by the pre_save signal above, and
+    # the rare case of a brand-new row saved with a rep already set (e.g.
+    # via the admin "Add" form), which that signal's `if not instance.pk`
+    # guard would otherwise miss.
+    should_notify = getattr(instance, "_notify_new_assignment", False) or (
+        created and instance.assigned_representative_id
+    )
+    instance._notify_new_assignment = False  # never re-fire on a later save()
+    if should_notify:
+        from tasks.notifications import notify_task_assigned
+        notify_task_assigned(instance)
