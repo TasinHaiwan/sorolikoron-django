@@ -18,7 +18,7 @@ from .google_auth import verify_google_id_token
 from .models import Customer, PasswordResetCode
 from .serializers import (
     PasswordResetConfirmSerializer, PasswordResetRequestSerializer, RegisterSerializer,
-    RepresentativeApplicationSerializer, RepresentativeSkillSerializer,
+    RepresentativeApplicationSerializer, RepresentativeSkillSerializer, UpdatePhoneSerializer,
 )
 
 PASSWORD_RESET_CODE_TTL = timedelta(minutes=15)
@@ -127,6 +127,17 @@ class MeView(APIView):
             "coverage_area": getattr(profile, "coverage_area", None),
             "skills": skills,
         })
+
+
+    def patch(self, request):
+        profile = getattr(request.user, "customer", None) or getattr(request.user, "representative", None)
+        if profile is None:
+            return Response({"detail": "No profile for this user."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = UpdatePhoneSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        profile.phone = serializer.validated_data["phone"]
+        profile.save(update_fields=["phone"])
+        return self.get(request)
 
 
 class PasswordResetRequestView(APIView):

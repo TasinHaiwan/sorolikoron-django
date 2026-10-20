@@ -72,3 +72,10 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 
     def validate_email(self, value):
         return value.strip().lower()
+
+
+class UpdatePhoneSerializer(serializers.Serializer):
+    phone = serializers.RegexField(r"^[\d+\-\s]{6,20}$", max_length=20)
+
+    def validate_phone(self, value):
+        return value.strip()
