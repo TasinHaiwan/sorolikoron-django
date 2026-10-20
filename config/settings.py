@@ -39,7 +39,9 @@ SECRET_KEY = 'django-insecure-8!=04=cjni!h1^lnf&iv*tblv@=8b45f!bg0dcod2rstc+67na
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['10.0.2.2', '127.0.0.1', 'localhost']
+# FIXME: '192.168.0.11' is the developer's LAN IP, added only for physical-device
+# push-notification testing — remove it before deploying to production.
+ALLOWED_HOSTS = ['10.0.2.2', '127.0.0.1', 'localhost', '192.168.0.11']
 
 
 # Application definition
