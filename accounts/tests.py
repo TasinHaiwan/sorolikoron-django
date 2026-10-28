@@ -1,3 +1,5 @@
+from unittest import mock
+
 from django.contrib.auth.models import User
 from django.core import mail
 from django.core.cache import cache
@@ -36,6 +38,15 @@ class PasswordResetRequestTests(TestCase):
         self.assertEqual(known_response.status_code, unknown_response.status_code)
         self.assertEqual(known_response.json(), unknown_response.json())
         self.assertEqual(len(mail.outbox), 1)  # only the known-email request sent anything
+
+    def test_mail_failure_does_not_reveal_that_the_account_exists(self):
+        with mock.patch("accounts.views.send_mail", side_effect=OSError("smtp down")):
+            known = self.client.post("/api/auth/password-reset/", {"email": "jane@example.com"})
+        cache.clear()
+        unknown = self.client.post("/api/auth/password-reset/", {"email": "nobody@example.com"})
+
+        self.assertEqual(known.status_code, 200)
+        self.assertEqual(known.json(), unknown.json())
 
     def test_new_request_supersedes_previous_pending_code(self):
         self.client.post("/api/auth/password-reset/", {"email": "jane@example.com"})

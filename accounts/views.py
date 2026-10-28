@@ -1,3 +1,4 @@
+import logging
 import secrets
 from datetime import timedelta
 
@@ -20,6 +21,8 @@ from .serializers import (
     PasswordResetConfirmSerializer, PasswordResetRequestSerializer, RegisterSerializer,
     RepresentativeApplicationSerializer, RepresentativeSkillSerializer, UpdatePhoneSerializer,
 )
+
+logger = logging.getLogger(__name__)
 
 PASSWORD_RESET_CODE_TTL = timedelta(minutes=15)
 
@@ -163,15 +166,20 @@ class PasswordResetRequestView(APIView):
                 code_hash=make_password(code),
                 expires_at=timezone.now() + PASSWORD_RESET_CODE_TTL,
             )
-            send_mail(
-                subject="Your Shorolikoron password reset code",
-                message=(
-                    f"Your password reset code is {code}.\n\n"
-                    "It expires in 15 minutes. If you didn't request this, you can ignore this email."
-                ),
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-            )
+            try:
+                send_mail(
+                    subject="Your Shorolikoron password reset code",
+                    message=(
+                        f"Your password reset code is {code}.\n\n"
+                        "It expires in 15 minutes. If you didn't request this, you can ignore this email."
+                    ),
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                )
+            except Exception:
+                # Swallowed on purpose: failing only for registered emails
+                # would reveal which emails have accounts.
+                logger.exception("Failed to send password reset email to user %s", user.pk)
 
         return _RESET_REQUESTED_RESPONSE
 
