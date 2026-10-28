@@ -62,16 +62,21 @@ Virtualenv lives at `venv/` in the repo root — activate it before running any 
 
 ## Known rough edges (real, not hypothetical — check before assuming otherwise)
 
-- **DB password is a hardcoded literal in `config/settings.py`** (`REPLACE_WITH_YOUR_PASSWORD`), not read from `.env`, even though `django-environ` is set up and used for `GOOGLE_OAUTH_CLIENT_ID`. The `.env` file exists but is empty. If you rotate the local Postgres password, you're editing a tracked file — worth moving to `env()` properly at some point.
+- **DB password is a hardcoded literal in `config/settings.py`** (`REPLACE_WITH_YOUR_PASSWORD`), not read from `.env`, even though `django-environ` is set up and used for `DEBUG`, `SECRET_KEY`, `ALLOWED_HOSTS`, CORS/CSRF origins and the email settings. If you rotate the local Postgres password, you're editing a tracked file — worth moving to `env()` properly at some point.
 - **`SIMPLE_JWT["BLACKLIST_AFTER_ROTATION"] = True` but `rest_framework_simplejwt.token_blacklist` is not in `INSTALLED_APPS`/migrated** — this setting is likely a silent no-op (or will error) as configured.
 - **There is deliberately no representative self-registration endpoint.** `RegisterView`/`GoogleLoginView` can only ever produce a `Customer` — a representative's `User`+`Representative` row is only ever created by an admin approving a `RepresentativeApplication`. Don't bolt rep account creation onto `RegisterSerializer`, which is customer-specific by design.
 - `accounts/authentication.py` is an empty, unreferenced file — leftover from the pre-JWT Firebase auth backend. Dead.
 - `tasks.models.ServiceCategory` (a `TextChoices`) is defined but no field references it anymore (removed by migration `0002_rename_description_servicerequest_details_and_more`, which replaced fixed categories with free-text `service_title`). Dead.
 - `rest_framework.authtoken` is installed but unused — JWT is the only active `DEFAULT_AUTHENTICATION_CLASSES` entry.
-- `MAILERS` in `settings.py` is not a real Django setting (`EMAIL_BACKEND` is) — likely a no-op leftover, not actually wired to anything.
 - `ServiceRequestCreateSerializer` is reused as the rep task-list serializer even though it omits fields a rep UI would plausibly want (`assigned_representative`, `dismiss_reason`, `dismiss_note`, `updated_at`) — a source comment already flags this (`# or a dedicated RepTaskSerializer`).
 - `core` app is empty and unwired — see above.
-- No tests beyond stub `tests.py` files, no CI/lint config, no README elsewhere in the repo.
+- Tests exist in `accounts`, `tasks` and `notifications` (`python manage.py test`; the DB user needs `CREATEDB` to create the test database). There's still no CI/lint config and no README in the repo.
+
+### Password reset — deferred past v1 (accepted for launch)
+
+- **A password reset doesn't sign out existing sessions.** `PasswordResetConfirmView` sets the new password but leaves outstanding refresh tokens valid, so whoever was already logged in (e.g. an attacker on a stolen account) stays in until the token expires (`REFRESH_TOKEN_LIFETIME`, 7 days). Fixing it needs the `token_blacklist` app installed (see the `BLACKLIST_AFTER_ROTATION` entry above) or a per-user token-version check.
+- **Reset throttles live in per-process memory.** `PasswordResetRequestThrottle`/`PasswordResetConfirmThrottle` use the default cache (no `CACHES` configured → `LocMemCache`), so counters reset on restart and aren't shared between server processes — the 3/min and 10/min limits are weaker under a multi-worker deployment. Configure a shared cache (database or Redis) to make them hold.
+- **Brand name mismatch in the reset email.** The subject and body say "Shorolikoron", while the customer app and the domain use "Sorolikoron". Cosmetic; pick one spelling.
 
 ## Git branches
 
