@@ -14,6 +14,8 @@ import environ
 from datetime import timedelta
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -30,18 +32,19 @@ GOOGLE_OAUTH_CLIENT_ID = env(
 # is a no-op rather than an error. See .gitignore — never commit this file.
 FIREBASE_CREDENTIALS_PATH = env("FIREBASE_CREDENTIALS_PATH", default="")
 
-# Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
+# DEBUG defaults to off so a server with no .env is safe; set DEBUG=True in
+# your local .env for development.
+DEBUG = env.bool("DEBUG", default=False)
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-8!=04=cjni!h1^lnf&iv*tblv@=8b45f!bg0dcod2rstc+67na'
+SECRET_KEY = env("SECRET_KEY", default="")
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured("SECRET_KEY must be set when DEBUG is off.")
+    SECRET_KEY = "django-insecure-local-development-only"
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-# FIXME: '192.168.0.11' is the developer's LAN IP, added only for physical-device
-# push-notification testing — remove it before deploying to production.
-ALLOWED_HOSTS = ['10.0.2.2', '127.0.0.1', 'localhost', '192.168.0.11']
+# Comma-separated in the environment, e.g. ALLOWED_HOSTS=sorolikoron.com,www.sorolikoron.com
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["10.0.2.2", "127.0.0.1", "localhost"])
 
 
 # Application definition
