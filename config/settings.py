@@ -76,8 +76,17 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# Allow the Next.js web frontend (dev server) to call this API from the browser.
-CORS_ALLOWED_ORIGINS = ["http://localhost:3000"]
+# Origins allowed to call this API from a browser: the Next.js dev server and
+# the production website. Override with a comma-separated env list.
+_WEBSITE_ORIGINS = ["https://www.sorolikoron.com", "https://sorolikoron.com"]
+
+CORS_ALLOWED_ORIGINS = env.list(
+    "CORS_ALLOWED_ORIGINS", default=["http://localhost:3000", *_WEBSITE_ORIGINS]
+)
+
+# Needed for HTTPS form posts such as Django admin login. Add the API's own
+# origin here if it's served from a different domain than the website.
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=_WEBSITE_ORIGINS)
 
 ROOT_URLCONF = 'config.urls'
 
