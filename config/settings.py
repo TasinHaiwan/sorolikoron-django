@@ -114,11 +114,11 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'sorolikoron_db',
-        'USER': 'sorolikoron_user',
-        'PASSWORD': 'REPLACE_WITH_YOUR_PASSWORD',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': env("DB_NAME", default="sorolikoron_db"),
+        'USER': env("DB_USER", default="sorolikoron_user"),
+        'PASSWORD': env("DB_PASSWORD", default="REPLACE_WITH_YOUR_PASSWORD"),
+        'HOST': env("DB_HOST", default="localhost"),
+        'PORT': env("DB_PORT", default="5432"),
     }
 }
 
@@ -158,12 +158,20 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+# `collectstatic` gathers admin CSS/JS here; nginx serves it in production.
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Media files (admin-uploaded content, e.g. home banner images) — unlike
 # static/, these aren't part of the codebase, so they're served
 # separately and kept out of version control (see .gitignore).
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+if not DEBUG:
+    # Behind nginx, which terminates HTTPS and sets X-Forwarded-Proto.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 
 # Email
