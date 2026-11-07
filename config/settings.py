@@ -119,6 +119,10 @@ DATABASES = {
         'PASSWORD': env("DB_PASSWORD", default="REPLACE_WITH_YOUR_PASSWORD"),
         'HOST': env("DB_HOST", default="localhost"),
         'PORT': env("DB_PORT", default="5432"),
+        # DigitalOcean Managed PostgreSQL only accepts encrypted connections:
+        # set DB_SSLMODE=require on the server. "prefer" (libpq's default)
+        # keeps local Postgres.app working without SSL.
+        'OPTIONS': {'sslmode': env("DB_SSLMODE", default="prefer")},
     }
 }
 

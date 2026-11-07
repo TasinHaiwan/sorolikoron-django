@@ -1,13 +1,15 @@
 # Install: sudo cp deploy/gunicorn.service /etc/systemd/system/sorolikoron.service
+# Database is a separate DigitalOcean Managed PostgreSQL cluster, so no local
+# postgresql.service dependency. 2 workers fit a 1 GB Droplet; use 3 at 2 GB.
 [Unit]
 Description=Sorolikoron Django API (gunicorn)
-After=network.target postgresql.service
+After=network.target
 
 [Service]
 User=sorolikoron
 Group=www-data
 WorkingDirectory=/srv/sorolikoron
-ExecStart=/srv/sorolikoron/venv/bin/gunicorn config.wsgi:application --bind 127.0.0.1:8000 --workers 3 --timeout 60
+ExecStart=/srv/sorolikoron/venv/bin/gunicorn config.wsgi:application --bind 127.0.0.1:8000 --workers 2 --timeout 60
 Restart=always
 
 [Install]
