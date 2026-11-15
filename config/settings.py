@@ -191,6 +191,10 @@ EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
 EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)
+# Seconds to wait on the SMTP server. Without a limit, an unreachable mail
+# server (e.g. a blocked port) holds the request, and a gunicorn worker,
+# until gunicorn kills it, while the client just times out.
+EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=10)
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@shorolikoron.com")
 
 if EMAIL_HOST:
