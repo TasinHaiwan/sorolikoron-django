@@ -24,9 +24,10 @@ Virtualenv lives at `venv/` in the repo root — activate it before running any 
 
 ## Architecture
 
-**Two real apps, one empty scaffold:**
+**Three real apps, one empty scaffold:**
 - **`accounts`** — identity. Wraps Django's built-in `auth.User` with two optional one-to-one profiles: `Customer` and `Representative` (`accounts/models.py`). There is no explicit role field — "what a user is" is purely determined by *which profile row exists* (`hasattr(request.user, "customer")` / `"representative")`). Nothing currently prevents a `User` from having both. `User.username` is always set equal to the user's email. `Representative` also carries `is_available`/`availability_updated_at` and a free-text `coverage_area` (admin-editable, e.g. "Dhaka campus routes"), plus a related `RepresentativeSkill` set (`name`, `level` — a `SkillLevel` TextChoices of beginner/intermediate/advanced — and an optional `note`), all admin-assigned via a `RepresentativeSkillInline` on `RepresentativeAdmin`; there is no representative-facing write path for skills or coverage, by design. Representative onboarding is request-based: `RepresentativeApplication` (name/email/password_hash/status) is submitted by the app, and only an admin action (`approve_applications`/`reject_applications` on `RepresentativeApplicationAdmin`) provisions the actual `User`+`Representative` row — there is no representative self-registration endpoint.
 - **`tasks`** — the domain: `Service` (the catalog customers browse) and `ServiceRequest` (what a customer submits against a service, or a custom request), plus `TaskDismissal` (an audit row created every time a representative dismisses a request). `tasks/permissions.py` has `IsCustomer`/`IsRepresentative`, which just check for the corresponding profile.
+- **`feedback`** — `Feedback` (`user` FK, `SET_NULL` so it survives account deletion; `category` suggestion/problem/praise/other; `message` ≤ 2000 chars; `source` website/customer_app/representative_app; `is_read`). Sent from "Write a Feedback" via `POST /api/feedback/` by any signed-in user, throttled to 10/hour per user (`feedback` scope). Staff read it in the admin (read-only except `is_read`, with mark read/unread actions; no add). There is no reply path.
 - **`core`** — an empty `startapp` scaffold, never given models/views/urls. Not wired into `config/urls.py`. Dead weight; safe to remove if you notice it's still empty.
 
 **Auth is JWT (`djangorestframework-simplejwt`) — not Firebase, not session auth**, despite the project's name/history (see `git log`; it started as a Firebase-authenticated app on `main`/the initial commit and was fully converted on the `jwt-authentication` branch, now merged into `dev`). `REST_FRAMEWORK["DEFAULT_PERMISSION_CLASSES"]` is `IsAuthenticated` globally — every view needs `AllowAny` explicitly if it should be open. Three ways to get a token pair:
@@ -53,6 +54,7 @@ Virtualenv lives at `venv/` in the repo root — activate it before running any 
 | POST | `/api/rep/tasks/<id>/undo-confirm/` | `RepUndoConfirmTaskView` | `IsAuthenticated, IsRepresentative` |
 | POST | `/api/rep/tasks/<id>/dismiss/` | `RepDismissTaskView` | `IsAuthenticated, IsRepresentative` |
 | POST | `/api/rep/availability/` | `RepAvailabilityView` | `IsAuthenticated, IsRepresentative` |
+| POST | `/api/feedback/` | `FeedbackCreateView` | `IsAuthenticated` (any profile) |
 
 `GET /api/service-requests/` returns only the authenticated customer's own requests (`requested_by=request.user.customer`, newest first) — there is no way for a customer to see anyone else's. `Service` also carries a short admin-editable `description` (blank by default) rendered as a one-line subtitle in the customer app; most of the 40+ seeded services don't have one set yet.
 

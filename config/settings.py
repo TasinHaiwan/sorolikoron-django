@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'accounts',
     'tasks',
     'notifications',
+    'feedback',
     "rest_framework",
     "rest_framework.authtoken",
     "corsheaders",
@@ -212,6 +213,7 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "password_reset_request": "3/min",
         "password_reset_confirm": "10/min",
+        "feedback": "10/hour",  # per user
     },
 }
 
